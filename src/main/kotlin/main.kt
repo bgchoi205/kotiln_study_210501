@@ -2,15 +2,20 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 val articleRepository = ArticleRepository()
+val memberRepository = MemberRepository()
+
+var loginedMember : Member? = null
 
 fun main(){
 
     val articleController = ArticleController()
+    val memberController = MemberController()
 
 
     println("==프로그램 시작==")
 
     articleRepository.makeTestArticles()
+    memberRepository.makeTestMember()
 
     while(true){
 
@@ -40,8 +45,19 @@ fun main(){
             "/article/modify" -> {
                 articleController.modify(rq)
             }
+            "/member/join" -> {
+                memberController.join()
+            }
+            "/member/login" -> {
+                memberController.login()
+            }
 
 
+            "/member/list" -> {
+                for(member in memberRepository.members){
+                    println("번호 : ${member.id} / 아이디 : ${member.loginId} / 이름 : ${member.name} / 별명 : ${member.nickName}")
+                }
+            }
         }
 
 
@@ -49,6 +65,95 @@ fun main(){
 
     println("==프로그램 끝==")
 }
+
+// Member 시작
+// Member DTo
+data class Member(
+    val id : Int,
+    val loginId : String,
+    val loginPw : String,
+    val name : String,
+    val nickName : String
+)
+
+
+// MemberRepository 시작
+class MemberRepository{
+
+    val members = mutableListOf<Member>()
+    var lastMemberId = 0
+
+    fun joinMember(loginId: String, loginPw: String, name: String, nickName: String): Int {
+        val id = ++lastMemberId
+        members.add(Member(id, loginId, loginPw, name, nickName))
+        return id
+    }
+
+    fun makeTestMember(){
+        for(i in 1..20){
+            joinMember("user$i", "user$i", "홍길동$i","사용자$i")
+        }
+    }
+
+    fun getMemberByLoginId(loginId: String): Member? {
+        for(member in members){
+            if(member.loginId == loginId){
+                return member
+            }
+        }
+        return null
+    }
+
+}
+
+// MemberRepository 끝
+
+
+// MemberController 시작
+class MemberController{
+    fun join() {
+        print("사용할 아이디 입력 : ")
+        val loginId = readLineTrim()
+        val member = memberRepository.getMemberByLoginId(loginId)
+        if(member != null){
+            println("사용중인 아이디입니다.")
+            return
+        }
+        print("사용할 비밀번호 입력 : ")
+        val loginPw = readLineTrim()
+        print("이름 입력 : ")
+        val name = readLineTrim()
+        print("별명 입력 : ")
+        val nickName = readLineTrim()
+
+        val id = memberRepository.joinMember(loginId, loginPw, name, nickName)
+
+        println("$id 번 회원으로 가입완료")
+    }
+
+    fun login() {
+        print("아이디 입력 : ")
+        val loginId = readLineTrim()
+        val member = memberRepository.getMemberByLoginId(loginId)
+        if(member == null){
+            println("존재하지 않는 아이디입니다.")
+            return
+        }
+        print("비밀번호 입력 : ")
+        val loginPw = readLineTrim()
+        if(member.loginPw != loginPw){
+            println("비밀번호가 틀립니다.")
+            return
+        }
+        loginedMember = member
+        println("${member.nickName}님 환영합니다.")
+    }
+
+}
+
+// MemberController 끝
+
+// Member 끝
 
 
 // Article 시작
